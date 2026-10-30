@@ -1,4 +1,5 @@
 import path from "path"
+import { Global } from "@opencode-ai/core/global"
 import type { MessageV2 } from "@/session/message-v2"
 import type { Info as SessionInfo } from "@/session/session"
 import { containsPath, type InstanceContext } from "@/project/instance-context"
@@ -19,7 +20,9 @@ export namespace PlanFile {
     if (!file) return
     const root = ctx.worktree === "/" ? ctx.directory : ctx.worktree
     const full = path.isAbsolute(file) ? path.normalize(file) : path.resolve(root, file)
-    if (!containsPath(full, ctx)) return
+    // The global plans dir stays valid: plans written before non-git projects moved
+    // to a project-local directory must remain refinable after the upgrade.
+    if (!containsPath(full, ctx) && !Filesystem.contains(path.join(Global.Path.data, "plans"), full)) return
     // may not exist yet, but an existing non-file is never the plan
     const existing = Filesystem.stat(full)
     if (existing && !existing.isFile()) return

@@ -1,4 +1,5 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import { Global } from "@opencode-ai/core/global"
 import { describe, expect, test } from "bun:test"
 import { Effect, ManagedRuntime } from "effect"
 import path from "path"
@@ -213,7 +214,49 @@ describe("PlanFile", () => {
           ),
         )
 
-        expect(result.metadata.plan).toBe(named)
+        expect(result.metadata.plan).toBe(PlanFile.display(named, ctx))
+      },
+    })
+  })
+
+  test("non-git plans live under the workspace .kilo/plans directory", async () => {
+    await using tmp = await tmpdir()
+    await provideTestInstance({
+      directory: tmp.path,
+      fn: async (ctx) => {
+        const session = await rt.runPromise(Session.Service.use((svc) => svc.create({ title: "non-git-location" })))
+        const plan = Session.plan(session, ctx)
+        expect(path.dirname(plan)).toBe(path.join(tmp.path, ".kilo", "plans"))
+        expect(path.basename(plan).startsWith(`${session.time.created}-`)).toBe(true)
+      },
+    })
+  })
+
+  test("a filesystem-root workspace falls back to the global plans directory", async () => {
+    await using tmp = await tmpdir()
+    await provideTestInstance({
+      directory: tmp.path,
+      fn: async (ctx) => {
+        const session = await rt.runPromise(Session.Service.use((svc) => svc.create({ title: "root-workspace" })))
+        const root = path.parse(tmp.path).root
+        const plan = Session.plan(session, {
+          ...ctx,
+          directory: root,
+          worktree: "/",
+          project: { ...ctx.project, vcs: undefined },
+        })
+        expect(path.dirname(plan)).toBe(path.join(Global.Path.data, "plans"))
+      },
+    })
+  })
+
+  test("a global plans path stays resolvable after the move to a project-local directory", async () => {
+    await using tmp = await tmpdir()
+    await provideTestInstance({
+      directory: tmp.path,
+      fn: async (ctx) => {
+        const legacy = path.join(Global.Path.data, "plans", "legacy.md")
+        expect(PlanFile.resolve(legacy, ctx)).toBe(legacy)
       },
     })
   })
@@ -373,12 +416,12 @@ describe("PlanFile", () => {
     })
   })
 
-  test("plan_exit recovers when a rejected path is actually the canonical non-git dir", async () => {
+  test("plan_exit accepts a plan path inside a non-git workspace", async () => {
     await using tmp = await tmpdir()
     await provideTestInstance({
       directory: tmp.path,
       fn: async (ctx) => {
-        const session = await rt.runPromise(Session.Service.use((svc) => svc.create({ title: "global-dir-path" })))
+        const session = await rt.runPromise(Session.Service.use((svc) => svc.create({ title: "workspace-dir-path" })))
         const canonical = Session.plan(session, ctx)
         const named = path.join(path.dirname(canonical), `${session.time.created}-my-plan.md`)
         await Bun.write(named, "Do implementation step 1")
@@ -399,7 +442,7 @@ describe("PlanFile", () => {
           ),
         )
 
-        expect(result.metadata.plan).toBe(named)
+        expect(result.metadata.plan).toBe(PlanFile.display(named, ctx))
       },
     })
   })

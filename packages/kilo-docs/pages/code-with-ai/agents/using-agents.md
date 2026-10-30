@@ -66,9 +66,11 @@ There are several ways to switch agents:
 | Aspect | Details |
 |---|---|
 | **Description** | An experienced technical leader and planner who helps design systems and create implementation plans |
-| **Tool Access** | Read-only tools plus restricted file editing (plan files in `.kilo/plans/` only) |
+| **Tool Access** | Read-only tools plus restricted file editing (plan files in [`.kilo/plans/`](/docs/code-with-ai/agents/plan-mode) only) |
 | **Ideal For** | System design, high-level planning, and architecture discussions |
 | **Special Features** | Similar to the legacy extension's "Architect" mode, with a planning-focused approach. In VS Code, the saved plan opens in the editor when ready for review. |
+
+Plan files are written to `.kilo/plans/` in the project. See [Plan Mode and Plan Files](/docs/code-with-ai/agents/plan-mode) for non-git workspaces and the fallback.
 
 ### debug
 
@@ -122,9 +124,11 @@ The VSCode extension and CLI do not include a built-in Review agent. Code review
 | Aspect | Details |
 |---|---|
 | **Description** | An experienced technical leader and planner who helps design systems and create implementation plans |
-| **Tool Access** | Read-only tools plus restricted file editing (plan files in `.kilo/plans/` only) |
+| **Tool Access** | Read-only tools plus restricted file editing (plan files in [`.kilo/plans/`](/docs/code-with-ai/agents/plan-mode) only) |
 | **Ideal For** | System design, high-level planning, and architecture discussions |
 | **Special Features** | Similar to the legacy extension's "Architect" mode, with a planning-focused approach |
+
+Plan files are written to `.kilo/plans/` in the project. See [Plan Mode and Plan Files](/docs/code-with-ai/agents/plan-mode) for non-git workspaces and the fallback.
 
 ### debug
 

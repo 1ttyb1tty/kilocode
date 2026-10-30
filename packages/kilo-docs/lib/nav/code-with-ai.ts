@@ -89,6 +89,10 @@ export const CodeWithAiNav: NavSection[] = [
         children: "Agents",
         subLinks: [
           {
+            href: "/code-with-ai/agents/plan-mode",
+            children: "Plan Mode and Plan Files",
+          },
+          {
             href: "/code-with-ai/agents/orchestrator-mode",
             children: "Orchestrator Mode",
           },
