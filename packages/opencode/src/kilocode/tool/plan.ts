@@ -1,7 +1,10 @@
 import { Effect, Schema } from "effect"
+import * as Option from "effect/Option"
 import * as Tool from "@/tool/tool"
+import { Config } from "@/config/config"
 import { InstanceState } from "@/effect/instance-state"
 import { Session } from "@/session/session"
+import { PlanDir } from "@/kilocode/plan-dir"
 import { PlanFile } from "@/kilocode/plan-file"
 import EXIT_DESCRIPTION from "@/tool/plan-exit.txt"
 
@@ -31,7 +34,10 @@ export const PlanExitTool = Tool.define(
           // resolved may be undefined even for a legit path (e.g. the non-git
           // global plans dir), so still fall through to locate()'s recovery.
           const resolved = params.path ? PlanFile.resolve(params.path, instance) : undefined
-          const target = resolved ?? Session.plan(info, instance)
+          const cfg = yield* Effect.serviceOption(Config.Service)
+          const location = Option.isSome(cfg) ? (yield* cfg.value.get()).plans?.location : undefined
+          const planDir = PlanDir.resolve({ location, instance })
+          const target = resolved ?? Session.plan(info, instance, planDir)
           // fetch fresh messages so written() sees a write from this same turn
           const messages = yield* session.messages({ sessionID: ctx.sessionID })
           const file = yield* Effect.promise(() => PlanFile.locate(target, messages, info, instance, ctx.agent))

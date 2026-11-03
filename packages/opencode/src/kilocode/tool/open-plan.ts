@@ -1,5 +1,8 @@
 import { Effect, Schema } from "effect"
+import * as Option from "effect/Option"
+import { Config } from "@/config/config"
 import { InstanceState } from "@/effect/instance-state"
+import { PlanDir } from "@/kilocode/plan-dir"
 import { PlanFile } from "@/kilocode/plan-file"
 import { Session } from "@/session/session"
 import * as Tool from "@/tool/tool"
@@ -30,7 +33,10 @@ export const OpenPlanTool = Tool.define(
           const resolved = params.path ? PlanFile.resolve(params.path, instance) : undefined
           const messages = yield* session.messages({ sessionID: ctx.sessionID })
           const latest = !params.path ? PlanFile.resolve(PlanFile.latest(messages), instance) : undefined
-          const target = resolved ?? latest ?? Session.plan(info, instance)
+          const cfg = yield* Effect.serviceOption(Config.Service)
+          const location = Option.isSome(cfg) ? (yield* cfg.value.get()).plans?.location : undefined
+          const planDir = PlanDir.resolve({ location, instance })
+          const target = resolved ?? latest ?? Session.plan(info, instance, planDir)
           const file = yield* Effect.promise(() => PlanFile.locate(target, messages, info, instance, ctx.agent))
           if (!file) {
             const plan = PlanFile.display(target, instance)

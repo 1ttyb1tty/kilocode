@@ -1,9 +1,13 @@
 import { Effect } from "effect"
+import * as Option from "effect/Option"
 import { SessionV1 } from "@opencode-ai/core/v1/session"
 import { Agent } from "@/agent/agent"
+import { Config } from "@/config/config"
+import { InstanceState } from "@/effect/instance-state"
 import { Permission } from "@/permission"
 import { PartID } from "@/session/schema"
 import { Session } from "@/session/session"
+import { PlanDir } from "@/kilocode/plan-dir"
 import AGENT_SWITCH from "./agent-switch.txt"
 import { KiloSessionPrompt } from "./prompt"
 
@@ -53,6 +57,10 @@ export namespace KiloModeReminders {
     session: Session.Info
   }) {
     const sessions = yield* Session.Service
+    const cfg = yield* Effect.serviceOption(Config.Service)
+    const instance = yield* InstanceState.context
+    const location = Option.isSome(cfg) ? (yield* cfg.value.get()).plans?.location : undefined
+    const planDir = PlanDir.resolve({ location, instance })
     const user = input.messages.findLast((msg) => msg.info.role === "user")
     if (!user) return input.messages
 
@@ -62,6 +70,7 @@ export namespace KiloModeReminders {
         session: input.session,
         userMessage: user,
         messages: input.messages,
+        planDir,
       }),
     )
 

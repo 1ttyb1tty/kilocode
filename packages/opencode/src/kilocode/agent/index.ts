@@ -272,13 +272,18 @@ function baseline(
 // Upstream v1.14.33 builds Agent state outside the Instance ALS, so reading
 // Instance.worktree here would crash. Thread worktree through from patchAgents
 // instead.
-function planEditRules(worktree: string, directory: string = worktree) {
+function planEditRules(
+  worktree: string,
+  directory: string = worktree,
+  planDir: string = path.join(directory, ".kilo", "plans"),
+) {
   return {
     "*": "deny" as const,
     // Non-git projects have no worktree ("/"), so edit permissions are matched against
-    // a path relative to the filesystem root. Add the directory-relative form for the
-    // project-local plan dir, which is where non-git plans are written.
-    [path.relative(worktree, path.join(directory, ".kilo", "plans", "*.md"))]: "allow" as const,
+    // a path relative to the filesystem root. Add the directory-relative and absolute
+    // forms for the resolved plan dir, which may be project-local or configured.
+    [path.relative(worktree, path.join(planDir, "*.md"))]: "allow" as const,
+    [path.join(planDir, "*.md")]: "allow" as const,
     [path.join(".kilo", "plans", "*.md")]: "allow" as const,
     [path.join("plans", "*.md")]: "allow" as const,
     [path.join(".plans", "*.md")]: "allow" as const,
@@ -287,8 +292,12 @@ function planEditRules(worktree: string, directory: string = worktree) {
   }
 }
 
-function planEditGuard(worktree: string, directory: string = worktree) {
-  return Permission.fromConfig({ edit: planEditRules(worktree, directory) })
+function planEditGuard(
+  worktree: string,
+  directory: string = worktree,
+  planDir: string = path.join(directory, ".kilo", "plans"),
+) {
+  return Permission.fromConfig({ edit: planEditRules(worktree, directory, planDir) })
 }
 
 export function hardenPlan(
@@ -296,6 +305,7 @@ export function hardenPlan(
   item: { native?: boolean; permission: Permission.Ruleset },
   worktree: string,
   directory: string,
+  planDir: string = path.join(directory, ".kilo", "plans"),
   ...explicit: Permission.Ruleset[]
 ) {
   // Plan-mode edit restrictions are a ceiling for the built-in plan agent only.
@@ -307,7 +317,7 @@ export function hardenPlan(
   if (key !== "plan") return
   if (item.native !== true) return
   const edit = explicit.map(editRestrictions)
-  item.permission = Permission.merge(item.permission, planEditGuard(worktree, directory), ...edit)
+  item.permission = Permission.merge(item.permission, planEditGuard(worktree, directory, planDir), ...edit)
 }
 
 export function hardenExplore(
@@ -327,6 +337,7 @@ export function hardenExplore(
 function planGuard(
   worktree: string,
   directory: string = worktree,
+  planDir: string = path.join(directory, ".kilo", "plans"),
   mcp: Record<string, "allow" | "ask" | "deny"> = {},
   enabled = false,
 ) {
@@ -357,8 +368,9 @@ function planGuard(
     external_directory: {
       [Truncate.GLOB]: "allow",
       [path.join(Global.Path.data, "plans", "*")]: "allow",
+      [path.join(planDir, "*")]: "allow",
     },
-    edit: planEditRules(worktree, directory),
+    edit: planEditRules(worktree, directory, planDir),
     ...mcp,
     ...board(enabled),
     ...guardedDenies,
@@ -521,6 +533,7 @@ export function patchAgents(
   worktree: string,
   whitelistedDirs: string[],
   directory: string = worktree,
+  planDir: string = path.join(directory, ".kilo", "plans"),
 ) {
   const enabled = kilo.board
   // Rename "build" → "code" for backward compatibility
@@ -540,7 +553,7 @@ export function patchAgents(
 
   // Patch plan mode
   if (agents.plan) {
-    const guard = planGuard(worktree, directory, kilo.mcpRules, enabled)
+    const guard = planGuard(worktree, directory, planDir, kilo.mcpRules, enabled)
     agents.plan = {
       ...agents.plan,
       description: "Plan mode. Can only edit plan files; all other filesystem mutations are denied.",
@@ -549,7 +562,7 @@ export function patchAgents(
         guard,
         user,
         baseline(guard, user, kilo.mcpRules),
-        planEditGuard(worktree, directory),
+        planEditGuard(worktree, directory, planDir),
         restrictions(user),
       ),
     }

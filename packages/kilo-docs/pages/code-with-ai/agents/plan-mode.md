@@ -23,6 +23,31 @@ Kilo creates the directory when Plan mode starts. File names are
 `<session-created-timestamp>-<slug>.md`. A refinement round may write a sibling with the same
 timestamp and a different suffix; the newest one is the plan that `plan_exit` reports.
 
+## Choosing a location
+
+Set `plans.location` to override the default. A global value is the default for every project; a
+project-level `kilo.json` overrides it.
+
+```jsonc
+// ~/.config/kilo/kilo.json — default for every project
+{ "plans": { "location": "project" } }
+
+// <repository>/kilo.json — override for this project
+{ "plans": { "location": "docs/plans" } }
+```
+
+| Value | Where plans are written |
+| --- | --- |
+| `project` (default) | `<project>/.kilo/plans/` |
+| `global` | The global data directory, `~/.local/share/kilo/plans/` |
+| `~/design/plans` | The home-relative path |
+| `docs/plans` | Relative to the project root |
+| `/absolute/path` | That path |
+
+A relative value declared in the global config still resolves against each project root, so one
+default can give every repository its own `docs/plans/` folder. An absolute global value
+centralises every plan at one path. The plan edit permissions follow the resolved directory.
+
 You can also pass an explicit workspace-local path to `plan_exit` when the plan lives somewhere
 else in the project, such as `docs/plans/`.
 

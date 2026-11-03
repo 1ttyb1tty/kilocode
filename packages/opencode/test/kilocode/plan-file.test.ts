@@ -232,6 +232,20 @@ describe("PlanFile", () => {
     })
   })
 
+  test("an explicit plan directory overrides the default", async () => {
+    await using tmp = await tmpdir()
+    await provideTestInstance({
+      directory: tmp.path,
+      fn: async (ctx) => {
+        const session = await rt.runPromise(Session.Service.use((svc) => svc.create({ title: "explicit-dir" })))
+        const custom = path.join(tmp.path, "shared", "plans")
+        const plan = Session.plan(session, ctx, custom)
+        expect(path.dirname(plan)).toBe(custom)
+        expect(path.basename(plan).startsWith(`${session.time.created}-`)).toBe(true)
+      },
+    })
+  })
+
   test("a filesystem-root workspace falls back to the global plans directory", async () => {
     await using tmp = await tmpdir()
     await provideTestInstance({

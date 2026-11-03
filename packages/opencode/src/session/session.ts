@@ -410,15 +410,18 @@ export const Event = {
   // kilocode_change end
 }
 
-export function plan(input: { slug: string; time: { created: number } }, instance: InstanceContext) {
+export function plan(input: { slug: string; time: { created: number } }, instance: InstanceContext, baseDir?: string) {
   // kilocode_change start
   // Keep plans with the project they describe: a git project uses its worktree, and a
   // non-git workspace uses its own directory instead of the shared global data dir.
   // A filesystem root is the one directory not used for storage; it falls back to the
   // global plans dir, which was the only non-git location before this change.
+  // Callers that resolved `plans.location` pass the directory explicitly; without one
+  // the default rule applies.
   const root = instance.project.vcs ? instance.worktree : instance.directory
   const base =
-    path.dirname(root) === root ? path.join(Global.Path.data, "plans") : path.join(root, ".kilo", "plans")
+    baseDir ??
+    (path.dirname(root) === root ? path.join(Global.Path.data, "plans") : path.join(root, ".kilo", "plans"))
   // kilocode_change end
   return path.join(base, [input.time.created, input.slug].join("-") + ".md")
 }

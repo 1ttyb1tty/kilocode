@@ -524,6 +524,7 @@ export namespace KiloSessionPrompt {
     session: Session.Info
     userMessage: MessageV2.WithParts
     messages?: MessageV2.WithParts[]
+    planDir?: string
   }) {
     if (!planning(input.agent)) return
     const add = (text: string) =>
@@ -538,7 +539,7 @@ export namespace KiloSessionPrompt {
 
     // keep bind(): inside Effect.promise the project context is lost, so Instance.current throws without it
     const ctx = Instance.bind(() => Instance.current)()
-    const plan = Session.plan(input.session, ctx)
+    const plan = Session.plan(input.session, ctx, input.planDir)
 
     if (mode(input.agent.name) === "plan") add(`\n\n${NATIVE_PLAN_PROMPT}`)
 

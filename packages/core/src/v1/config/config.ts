@@ -70,6 +70,16 @@ export const Info = Schema.Struct({
     description: "Command configuration, see https://kilo.ai/docs/customize/workflows", // kilocode_change
   }),
   skills: Schema.optional(ConfigSkillsV1.Info).annotate({ description: "Additional skill folder paths" }),
+  // kilocode_change start - plan file location policy
+  plans: Schema.optional(
+    Schema.Struct({
+      location: Schema.optional(Schema.String).annotate({
+        description:
+          "Where plan files are written: 'project' (default), 'global', or a path (absolute, ~-relative, or project-relative)",
+      }),
+    }),
+  ).annotate({ description: "Plan file location policy" }),
+  // kilocode_change end
   references: Schema.optional(ConfigReference.Info).annotate({
     description: "Named git or local directory references",
   }),
